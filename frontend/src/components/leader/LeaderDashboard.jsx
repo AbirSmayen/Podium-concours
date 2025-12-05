@@ -4,6 +4,7 @@ import api from '../../services/api';
 import socketService from '../../services/socket';
 import { Users, Trophy, Target, Award } from 'lucide-react';
 import TeamMembers from './TeamMembers';
+import TeamRequests from './TeamRequests';
 import ScoreSubmission from './ScoreSubmission';
 
 const LeaderDashboard = () => {
@@ -42,20 +43,34 @@ const LeaderDashboard = () => {
 
   const fetchTeamData = async () => {
     try {
-      const [teamRes, scoresRes] = await Promise.all([
+      if (!user.teamId) {
+        setLoading(false);
+        return;
+      }
+
+      const [teamRes, scoresRes, leaderboardRes] = await Promise.all([
         api.get(`/teams/${user.teamId}`),
-        api.get(`/scores?teamId=${user.teamId}`),
+        api.get(`/scores/team/${user.teamId}`),
+        api.get('/teams/leaderboard'),
       ]);
 
-      setTeam(teamRes.data);
+      // Gérer la structure de réponse
+      const team = teamRes.data.success ? teamRes.data.data.team : teamRes.data;
+      const scores = scoresRes.data.success ? scoresRes.data.data.scores : (Array.isArray(scoresRes.data) ? scoresRes.data : []);
+      const leaderboard = leaderboardRes.data.success ? leaderboardRes.data.data.leaderboard : (Array.isArray(leaderboardRes.data) ? leaderboardRes.data : []);
+
+      setTeam(team);
       
-      const totalScore = scoresRes.data.reduce((sum, score) => sum + score.pointsEarned, 0);
+      const validatedScores = scores.filter((s) => s.status === 'validated');
+      const totalScore = validatedScores.reduce((sum, score) => sum + (score.pointsEarned || 0), 0);
+      
+      const teamRank = leaderboard.findIndex((t) => (t._id === user.teamId || t.id === user.teamId)) + 1;
       
       setStats({
-        totalMembers: teamRes.data.members.length,
-        totalScore: totalScore,
-        completedChallenges: scoresRes.data.length,
-        rank: teamRes.data.rank || 0,
+        totalMembers: team?.members?.length || 0,
+        totalScore: team?.score || totalScore,
+        completedChallenges: validatedScores.length,
+        rank: teamRank || team?.rank || 0,
       });
     } catch (error) {
       console.error('Erreur chargement données équipe:', error);
@@ -84,13 +99,19 @@ const LeaderDashboard = () => {
                 Bienvenue, {user.name} - {team?.name}
               </p>
             </div>
-            {team?.logo && (
-              <img
-                src={team.logo}
-                alt={team.name}
-                className="w-16 h-16 rounded-full border-4 border-white"
-              />
-            )}
+            {team?.logo ? (
+              typeof team.logo === 'string' && team.logo.startsWith('http') ? (
+                <img
+                  src={team.logo}
+                  alt={team.name}
+                  className="w-16 h-16 rounded-full border-4 border-white object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center text-3xl bg-white/20">
+                  {team.logo}
+                </div>
+              )
+            ) : null}
           </div>
         </div>
       </div>
@@ -154,6 +175,17 @@ const LeaderDashboard = () => {
                 Vue d'ensemble
               </button>
               <button
+                onClick={() => setActiveTab('requests')}
+                className={`px-6 py-4 font-medium relative ${
+                  activeTab === 'requests'
+                    ? 'border-b-2 border-indigo-600 text-indigo-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Demandes
+                {/* Badge pour les nouvelles demandes */}
+              </button>
+              <button
                 onClick={() => setActiveTab('members')}
                 className={`px-6 py-4 font-medium ${
                   activeTab === 'members'
@@ -198,6 +230,7 @@ const LeaderDashboard = () => {
               </div>
             )}
 
+            {activeTab === 'requests' && <TeamRequests teamId={user.teamId} />}
             {activeTab === 'members' && <TeamMembers teamId={user.teamId} />}
             {activeTab === 'scores' && <ScoreSubmission teamId={user.teamId} onSuccess={fetchTeamData} />}
           </div>

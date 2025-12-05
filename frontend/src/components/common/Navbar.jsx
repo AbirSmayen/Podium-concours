@@ -13,12 +13,14 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-white shadow-md">
-      <div className="max-w-7xl mx-auto px-4">
+    <nav className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 shadow-xl sticky top-0 z-50 backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center gap-2 text-xl font-bold text-indigo-600">
-            <Trophy className="w-8 h-8" />
-            Team Challenge
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl group-hover:bg-white/30 transition-all duration-300">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-xl font-bold text-white tracking-tight">Podium Concours</span>
           </Link>
 
           <div className="flex items-center gap-4">
@@ -26,22 +28,22 @@ const Navbar = () => {
               <>
                 <Link
                   to={user?.role === 'leader' ? '/leader/dashboard' : '/member/dashboard'}
-                  className="flex items-center gap-2 text-gray-700 hover:text-indigo-600"
+                  className="flex items-center gap-2 text-white/90 hover:text-white font-medium px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300"
                 >
                   <Home className="w-5 h-5" />
-                  Dashboard
+                  <span className="hidden sm:inline">Dashboard</span>
                 </Link>
-                <div className="flex items-center gap-3 border-l pl-4">
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">{user?.name}</p>
-                    <p className="text-xs text-gray-500">{user?.role}</p>
+                <div className="flex items-center gap-3 border-l border-white/20 pl-4">
+                  <div className="text-right hidden sm:block">
+                    <p className="font-semibold text-white text-sm">{user?.name}</p>
+                    <p className="text-xs text-white/70 capitalize">{user?.role}</p>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                    className="flex items-center gap-2 bg-red-500/90 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
                     <LogOut className="w-4 h-4" />
-                    Déconnexion
+                    <span className="hidden sm:inline">Déconnexion</span>
                   </button>
                 </div>
               </>
@@ -49,13 +51,13 @@ const Navbar = () => {
               <>
                 <Link
                   to="/leaderboard"
-                  className="text-gray-700 hover:text-indigo-600 font-medium"
+                  className="text-white/90 hover:text-white font-medium px-4 py-2 rounded-lg hover:bg-white/10 transition-all duration-300 hidden sm:block"
                 >
                   Classement
                 </Link>
                 <Link
                   to="/login"
-                  className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+                  className="bg-white/20 hover:bg-white/30 text-white px-6 py-2.5 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg"
                 >
                   Connexion
                 </Link>

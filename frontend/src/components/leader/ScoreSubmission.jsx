@@ -5,7 +5,6 @@ import { Send, CheckCircle } from 'lucide-react';
 const ScoreSubmission = ({ teamId, onSuccess }) => {
   const [challenges, setChallenges] = useState([]);
   const [selectedChallenge, setSelectedChallenge] = useState('');
-  const [pointsEarned, setPointsEarned] = useState('');
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -17,8 +16,17 @@ const ScoreSubmission = ({ teamId, onSuccess }) => {
 
   const fetchChallenges = async () => {
     try {
-      const response = await api.get('/challenges');
-      setChallenges(response.data);
+      const response = await api.get('/challenges/active');
+      if (response.data.success && response.data.data) {
+        setChallenges(response.data.data.challenges || []);
+      } else {
+        // Fallback
+        const response2 = await api.get('/challenges');
+        const challenges = response2.data.success 
+          ? (response2.data.data?.challenges || [])
+          : (Array.isArray(response2.data) ? response2.data : []);
+        setChallenges(challenges.filter(c => c.isActive && new Date(c.deadline) > new Date()));
+      }
     } catch (error) {
       console.error('Erreur chargement défis:', error);
     }
@@ -31,20 +39,21 @@ const ScoreSubmission = ({ teamId, onSuccess }) => {
     setLoading(true);
 
     try {
-      await api.post('/scores', {
-        teamId,
+      const response = await api.post('/scores', {
         challengeId: selectedChallenge,
-        pointsEarned: parseInt(pointsEarned),
-        comment,
+        submissionNote: comment,
       });
 
+      if (response.data.success) {
       setSuccess('Score soumis avec succès ! En attente de validation.');
       setSelectedChallenge('');
-      setPointsEarned('');
       setComment('');
-      
-      if (onSuccess) {
-        setTimeout(onSuccess, 1000);
+        
+        if (onSuccess) {
+          setTimeout(onSuccess, 1000);
+        }
+      } else {
+        setError(response.data.message || 'Erreur lors de la soumission');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur lors de la soumission');
@@ -109,29 +118,11 @@ const ScoreSubmission = ({ teamId, onSuccess }) => {
                 {new Date(selectedChallengeData.deadline).toLocaleDateString('fr-FR')}
               </p>
             )}
+            <p className="text-sm text-blue-800 mt-2">
+              <strong>Note:</strong> Les points seront automatiquement attribués selon ce défi ({selectedChallengeData.points} points maximum).
+            </p>
           </div>
         )}
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Points obtenus *
-          </label>
-          <input
-            type="number"
-            value={pointsEarned}
-            onChange={(e) => setPointsEarned(e.target.value)}
-            required
-            min="0"
-            max={selectedChallengeData?.points || 100}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-            placeholder="Ex: 50"
-          />
-          {selectedChallengeData && (
-            <p className="text-sm text-gray-500 mt-1">
-              Maximum: {selectedChallengeData.points} points
-            </p>
-          )}
-        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

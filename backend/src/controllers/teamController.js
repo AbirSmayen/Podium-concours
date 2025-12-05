@@ -4,14 +4,65 @@ const Team = require('../models/Team');
 const User = require('../models/User');
 const { successResponse, errorResponse, createdResponse, notFoundResponse, badRequestResponse } = require('../utils/responses');
 
-// @desc    Créer une équipe (Leader)
+// @desc    Créer une équipe (Leader ou Admin)
 // @route   POST /api/teams
-// @access  Private/Leader
+// @access  Private/Leader/Admin
 const createTeam = async (req, res, next) => {
   try {
-    const { name, logo } = req.body;
+    const { name, logo, leaderId } = req.body;
 
-    if (req.user.role !== 'leader' && req.user.role !== 'admin') {
+    // Si c'est un admin qui crée une équipe, il peut spécifier un leaderId
+    if (req.user.role === 'admin') {
+      if (!leaderId) {
+        return badRequestResponse(res, 'Veuillez spécifier un leader pour cette équipe');
+      }
+
+      // Vérifier que le leader existe et est actif
+      const leader = await User.findById(leaderId);
+      if (!leader) {
+        return notFoundResponse(res, 'Leader introuvable');
+      }
+
+      if (leader.role !== 'leader') {
+        return badRequestResponse(res, 'L\'utilisateur spécifié n\'est pas un leader');
+      }
+
+      if (leader.status !== 'active') {
+        return badRequestResponse(res, 'Le leader doit être actif pour créer une équipe');
+      }
+
+      if (leader.teamId) {
+        return badRequestResponse(res, 'Ce leader a déjà une équipe');
+      }
+
+      // Créer l'équipe avec le leader spécifié
+      const team = await Team.create({
+        name,
+        logo: logo || '',
+        leaderId: leaderId,
+        members: [leaderId]
+      });
+
+      await User.findByIdAndUpdate(leaderId, { teamId: team._id });
+
+      const populatedTeam = await Team.findById(team._id)
+        .populate('leaderId', 'name email')
+        .populate('members', 'name email role');
+
+      // Émettre un événement Socket.IO
+      const io = req.app.get('io');
+      if (io) {
+        io.to('leaderboard').emit('leaderboard-updated', {
+          action: 'team-created',
+          teamId: team._id.toString()
+        });
+      }
+
+      return createdResponse(res, { team: populatedTeam }, 'Équipe créée avec succès');
+    }
+
+    // Si c'est un leader qui crée sa propre équipe
+    if (req.user.role !== 'leader') {
       return errorResponse(res, 'Seuls les leaders peuvent créer des équipes', 403);
     }
 
@@ -35,6 +86,15 @@ const createTeam = async (req, res, next) => {
     const populatedTeam = await Team.findById(team._id)
       .populate('leaderId', 'name email')
       .populate('members', 'name email role');
+
+    // Émettre un événement Socket.IO pour mettre à jour le classement
+    const io = req.app.get('io');
+    if (io) {
+      io.to('leaderboard').emit('leaderboard-updated', {
+        action: 'team-created',
+        teamId: team._id.toString()
+      });
+    }
 
     createdResponse(res, { team: populatedTeam }, 'Équipe créée avec succès');
 

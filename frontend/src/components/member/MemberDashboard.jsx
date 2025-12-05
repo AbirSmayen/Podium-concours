@@ -41,26 +41,35 @@ const MemberDashboard = () => {
 
   const fetchData = async () => {
     try {
+      if (!user.teamId) {
+        setLoading(false);
+        return;
+      }
+
       const [teamRes, scoresRes, teamsRes] = await Promise.all([
         api.get(`/teams/${user.teamId}`),
-        api.get(`/scores?teamId=${user.teamId}`),
-        api.get('/teams'),
+        api.get(`/scores/team/${user.teamId}`),
+        api.get('/teams/leaderboard'),
       ]);
 
-      setTeam(teamRes.data);
-      
-      const totalScore = scoresRes.data
-        .filter((s) => s.validated)
-        .reduce((sum, score) => sum + score.pointsEarned, 0);
+      // Gérer la structure de réponse
+      const team = teamRes.data.success ? teamRes.data.data.team : teamRes.data;
+      const scores = scoresRes.data.success ? scoresRes.data.data.scores : (Array.isArray(scoresRes.data) ? scoresRes.data : []);
+      const teams = teamsRes.data.success ? teamsRes.data.data.leaderboard : (Array.isArray(teamsRes.data) ? teamsRes.data : []);
 
-      const sortedTeams = teamsRes.data.sort((a, b) => b.score - a.score);
-      const teamRank = sortedTeams.findIndex((t) => t._id === user.teamId) + 1;
+      setTeam(team);
+      
+      const validatedScores = scores.filter((s) => s.status === 'validated');
+      const totalScore = validatedScores.reduce((sum, score) => sum + (score.pointsEarned || 0), 0);
+
+      const sortedTeams = teams.sort((a, b) => (b.score || 0) - (a.score || 0));
+      const teamRank = sortedTeams.findIndex((t) => t._id === user.teamId || t.id === user.teamId) + 1;
 
       setStats({
-        teamScore: totalScore,
-        teamRank: teamRank,
-        completedChallenges: scoresRes.data.filter((s) => s.validated).length,
-        totalMembers: teamRes.data.members?.length || 0,
+        teamScore: team?.score || totalScore,
+        teamRank: teamRank || team?.rank || 0,
+        completedChallenges: validatedScores.length,
+        totalMembers: team?.members?.length || 0,
       });
     } catch (error) {
       console.error('Erreur chargement données:', error);
@@ -89,13 +98,19 @@ const MemberDashboard = () => {
                 Bienvenue, {user.name} - {team?.name}
               </p>
             </div>
-            {team?.logo && (
-              <img
-                src={team.logo}
-                alt={team.name}
-                className="w-16 h-16 rounded-full border-4 border-white"
-              />
-            )}
+            {team?.logo ? (
+              typeof team.logo === 'string' && team.logo.startsWith('http') ? (
+                <img
+                  src={team.logo}
+                  alt={team.name}
+                  className="w-16 h-16 rounded-full border-4 border-white object-cover"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-full border-4 border-white flex items-center justify-center text-3xl bg-white/20">
+                  {team.logo}
+                </div>
+              )
+            ) : null}
           </div>
         </div>
       </div>

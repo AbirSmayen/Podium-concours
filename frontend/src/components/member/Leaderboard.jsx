@@ -8,20 +8,40 @@ const Leaderboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Connecter le socket
+    socketService.connect();
+    
     fetchLeaderboard();
 
+    // Écouter les mises à jour du classement
     socketService.onLeaderboardUpdate(() => {
       fetchLeaderboard();
     });
+
+    // Nettoyer à la déconnexion
+    return () => {
+      socketService.off('leaderboard-updated');
+    };
   }, []);
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await api.get('/teams');
-      const sortedTeams = response.data
-        .sort((a, b) => b.score - a.score)
-        .map((team, index) => ({ ...team, rank: index + 1 }));
-      setTeams(sortedTeams);
+      const response = await api.get('/teams/leaderboard');
+      if (response.data.success && response.data.data) {
+        const teamsWithRank = response.data.data.leaderboard.map((team, index) => ({
+          ...team,
+          rank: index + 1
+        }));
+        setTeams(teamsWithRank);
+      } else {
+        // Fallback si la structure est différente
+        const response2 = await api.get('/teams');
+        const teams = response2.data.success ? response2.data.data.teams : response2.data;
+        const sortedTeams = (Array.isArray(teams) ? teams : [])
+          .sort((a, b) => (b.score || 0) - (a.score || 0))
+          .map((team, index) => ({ ...team, rank: index + 1 }));
+        setTeams(sortedTeams);
+      }
     } catch (error) {
       console.error('Erreur chargement classement:', error);
     } finally {
@@ -74,12 +94,22 @@ const Leaderboard = () => {
               <div className="flex justify-center mb-4">
                 {getRankIcon(team.rank)}
               </div>
-              {team.logo && (
-                <img
-                  src={team.logo}
-                  alt={team.name}
-                  className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-4"
-                />
+              {team.logo ? (
+                typeof team.logo === 'string' && team.logo.startsWith('http') ? (
+                  <img
+                    src={team.logo}
+                    alt={team.name}
+                    className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-4 object-cover"
+                  />
+                ) : (
+                  <div className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-4 flex items-center justify-center text-4xl bg-white/20">
+                    {team.logo}
+                  </div>
+                )
+              ) : (
+                <div className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-4 flex items-center justify-center text-4xl bg-white/20">
+                  🏆
+                </div>
               )}
               <h4 className="text-2xl font-bold mb-2">{team.name}</h4>
               <p className="text-3xl font-bold mb-1">{team.score} pts</p>
@@ -127,12 +157,22 @@ const Leaderboard = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
-                    {team.logo && (
-                      <img
-                        src={team.logo}
-                        alt={team.name}
-                        className="w-10 h-10 rounded-full"
-                      />
+                    {team.logo ? (
+                      typeof team.logo === 'string' && team.logo.startsWith('http') ? (
+                        <img
+                          src={team.logo}
+                          alt={team.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-gray-100">
+                          {team.logo}
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl bg-gray-100">
+                        🏆
+                      </div>
                     )}
                     <span className="font-semibold text-gray-900">{team.name}</span>
                   </div>

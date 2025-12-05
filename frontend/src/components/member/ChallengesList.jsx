@@ -13,8 +13,17 @@ const ChallengesList = () => {
 
   const fetchChallenges = async () => {
     try {
-      const response = await api.get('/challenges');
-      setChallenges(response.data);
+      const response = await api.get('/challenges/active');
+      if (response.data.success && response.data.data) {
+        setChallenges(response.data.data.challenges || []);
+      } else {
+        // Fallback
+        const response2 = await api.get('/challenges');
+        const challenges = response2.data.success 
+          ? (response2.data.data?.challenges || [])
+          : (Array.isArray(response2.data) ? response2.data : []);
+        setChallenges(challenges.filter(c => c.isActive && new Date(c.deadline) > new Date()));
+      }
     } catch (error) {
       console.error('Erreur chargement défis:', error);
     } finally {
@@ -80,10 +89,13 @@ const ChallengesList = () => {
             Aucun défi disponible
           </p>
         ) : (
-          filteredChallenges.map((challenge) => (
+          filteredChallenges.map((challenge, index) => (
             <div
               key={challenge._id}
-              className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:shadow-lg transition"
+              className="group bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-xl hover:border-indigo-400 transition-all duration-300 transform hover:-translate-y-1"
+              style={{
+                animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
+              }}
             >
               {/* Header du défi */}
               <div className="flex items-start justify-between mb-4">

@@ -60,7 +60,7 @@ scoreSchema.index({ teamId: 1, challengeId: 1 }, { unique: true });
 scoreSchema.index({ status: 1, submittedAt: -1 });
 
 // Méthode pour valider un score
-scoreSchema.methods.validate = async function(adminId, note = '') {
+scoreSchema.methods.validateScore = async function(adminId, note = '') {
   this.status = 'validated';
   this.validatedBy = adminId;
   this.validatedAt = new Date();

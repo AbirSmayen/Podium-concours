@@ -2,25 +2,13 @@
 import { io } from 'socket.io-client';
 
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
-const USE_MOCK = process.env.REACT_APP_USE_MOCK === 'true';
 
 class SocketService {
   constructor() {
     this.socket = null;
-    this.mockCallbacks = {
-      'score-updated': [],
-      'leaderboard-updated': []
-    };
   }
 
   connect() {
-    if (USE_MOCK) {
-      console.log('Socket en mode MOCK');
-      // Simuler des mises à jour périodiques
-      this.startMockUpdates();
-      return { connected: true };
-    }
-
     if (!this.socket) {
       this.socket = io(SOCKET_URL, {
         auth: {
@@ -29,21 +17,20 @@ class SocketService {
       });
 
       this.socket.on('connect', () => {
-        console.log('Socket connecté');
+        console.log('✅ Socket connecté');
+        // Rejoindre la salle du classement
+        this.socket.emit('join', 'leaderboard');
       });
 
       this.socket.on('disconnect', () => {
-        console.log('Socket déconnecté');
+        console.log('❌ Socket déconnecté');
+      });
+
+      this.socket.on('connect_error', (error) => {
+        console.error('Erreur de connexion Socket:', error);
       });
     }
     return this.socket;
-  }
-
-  startMockUpdates() {
-    // Simuler une mise à jour toutes les 30 secondes
-    setInterval(() => {
-      this.mockCallbacks['leaderboard-updated'].forEach(cb => cb({ updated: true }));
-    }, 30000);
   }
 
   disconnect() {
@@ -54,42 +41,34 @@ class SocketService {
   }
 
   onScoreUpdate(callback) {
-    if (USE_MOCK) {
-      this.mockCallbacks['score-updated'].push(callback);
-      return;
-    }
     if (this.socket) {
       this.socket.on('score-updated', callback);
     }
   }
 
   onLeaderboardUpdate(callback) {
-    if (USE_MOCK) {
-      this.mockCallbacks['leaderboard-updated'].push(callback);
-      return;
-    }
     if (this.socket) {
       this.socket.on('leaderboard-updated', callback);
     }
   }
 
   joinTeamRoom(teamId) {
-    if (USE_MOCK) {
-      console.log('Mock: Joined team room', teamId);
-      return;
-    }
     if (this.socket) {
       this.socket.emit('join-team', teamId);
+      console.log(`👥 Rejoint la salle de l'équipe ${teamId}`);
     }
   }
 
   leaveTeamRoom(teamId) {
-    if (USE_MOCK) {
-      console.log('Mock: Left team room', teamId);
-      return;
-    }
     if (this.socket) {
       this.socket.emit('leave-team', teamId);
+      console.log(`👋 Quitté la salle de l'équipe ${teamId}`);
+    }
+  }
+
+  off(event, callback) {
+    if (this.socket) {
+      this.socket.off(event, callback);
     }
   }
 }

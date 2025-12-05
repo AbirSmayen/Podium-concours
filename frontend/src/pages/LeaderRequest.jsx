@@ -8,8 +8,7 @@ const LeaderRequest = () => {
     name: '',
     email: '',
     password: '',
-    phone: '',
-    motivation: '',
+    leaderRequestMessage: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -125,34 +124,20 @@ const LeaderRequest = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Téléphone *
-              </label>
-              <input
-                type="tel"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                required
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="+216 XX XXX XXX"
-              />
-            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Motivation *
+              Message de motivation *
             </label>
             <textarea
-              name="motivation"
-              value={formData.motivation}
+              name="leaderRequestMessage"
+              value={formData.leaderRequestMessage}
               onChange={handleChange}
               required
               rows={4}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              placeholder="Pourquoi voulez-vous devenir leader d'équipe ?"
+              placeholder="Pourquoi voulez-vous devenir leader d'équipe ? Décrivez votre expérience et votre motivation."
             />
           </div>
 

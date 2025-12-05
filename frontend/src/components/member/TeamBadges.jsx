@@ -13,7 +13,12 @@ const TeamBadges = ({ teamId }) => {
   const fetchTeamBadges = async () => {
     try {
       const response = await api.get(`/teams/${teamId}`);
-      setTeam(response.data);
+      if (response.data.success && response.data.data) {
+        setTeam(response.data.data.team || response.data.data);
+      } else {
+        // Fallback si la structure est différente
+        setTeam(response.data.team || response.data);
+      }
     } catch (error) {
       console.error('Erreur chargement badges:', error);
     } finally {

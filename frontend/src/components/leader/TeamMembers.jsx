@@ -17,7 +17,13 @@ const TeamMembers = ({ teamId }) => {
   const fetchMembers = async () => {
     try {
       const response = await api.get(`/teams/${teamId}`);
-      setMembers(response.data.members || []);
+      if (response.data.success && response.data.data) {
+        const team = response.data.data.team || response.data.data;
+        setMembers(team.members || []);
+      } else {
+        // Fallback si la structure est différente
+        setMembers(response.data.members || response.data.data?.members || []);
+      }
     } catch (error) {
       console.error('Erreur chargement membres:', error);
     }
@@ -30,9 +36,8 @@ const TeamMembers = ({ teamId }) => {
     setLoading(true);
 
     try {
-      await api.post('/users/register', {
+      await api.post('/auth/register', {
         ...inviteData,
-        teamId: teamId,
         role: 'member',
       });
 

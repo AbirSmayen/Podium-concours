@@ -13,11 +13,21 @@ const PublicLeaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const response = await api.get('/teams');
-      const sortedTeams = response.data
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 10); // Top 10
-      setTeams(sortedTeams);
+      const response = await api.get('/teams/leaderboard');
+      if (response.data.success && response.data.data) {
+        const leaderboard = response.data.data.leaderboard || [];
+        setTeams(leaderboard.slice(0, 10)); // Top 10
+      } else {
+        // Fallback
+        const response2 = await api.get('/teams');
+        const teams = response2.data.success 
+          ? (response2.data.data?.teams || [])
+          : (Array.isArray(response2.data) ? response2.data : []);
+        const sortedTeams = teams
+          .sort((a, b) => (b.score || 0) - (a.score || 0))
+          .slice(0, 10);
+        setTeams(sortedTeams);
+      }
     } catch (error) {
       console.error('Erreur chargement classement:', error);
     } finally {
@@ -46,12 +56,22 @@ const PublicLeaderboard = () => {
             <div className="flex-1 max-w-xs">
               <div className="bg-gradient-to-br from-gray-300 to-gray-500 rounded-t-lg p-6 text-center">
                 <div className="text-6xl mb-2">🥈</div>
-                {teams[1]?.logo && (
-                  <img
-                    src={teams[1].logo}
-                    alt={teams[1].name}
-                    className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-3"
-                  />
+                {teams[1]?.logo ? (
+                  typeof teams[1].logo === 'string' && teams[1].logo.startsWith('http') ? (
+                    <img
+                      src={teams[1].logo}
+                      alt={teams[1].name}
+                      className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-3 object-cover"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-3 flex items-center justify-center text-4xl bg-white/20">
+                      {teams[1].logo}
+                    </div>
+                  )
+                ) : (
+                  <div className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-3 flex items-center justify-center text-4xl bg-white/20">
+                    🏆
+                  </div>
                 )}
                 <h3 className="text-xl font-bold text-white mb-2">
                   {teams[1]?.name}
@@ -67,12 +87,22 @@ const PublicLeaderboard = () => {
             <div className="flex-1 max-w-xs">
               <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-t-lg p-6 text-center">
                 <div className="text-7xl mb-2">🏆</div>
-                {teams[0]?.logo && (
-                  <img
-                    src={teams[0].logo}
-                    alt={teams[0].name}
-                    className="w-24 h-24 mx-auto rounded-full border-4 border-white mb-3"
-                  />
+                {teams[0]?.logo ? (
+                  typeof teams[0].logo === 'string' && teams[0].logo.startsWith('http') ? (
+                    <img
+                      src={teams[0].logo}
+                      alt={teams[0].name}
+                      className="w-24 h-24 mx-auto rounded-full border-4 border-white mb-3 object-cover"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 mx-auto rounded-full border-4 border-white mb-3 flex items-center justify-center text-5xl bg-white/20">
+                      {teams[0].logo}
+                    </div>
+                  )
+                ) : (
+                  <div className="w-24 h-24 mx-auto rounded-full border-4 border-white mb-3 flex items-center justify-center text-5xl bg-white/20">
+                    🏆
+                  </div>
                 )}
                 <h3 className="text-2xl font-bold text-white mb-2">
                   {teams[0]?.name}
@@ -88,12 +118,22 @@ const PublicLeaderboard = () => {
             <div className="flex-1 max-w-xs">
               <div className="bg-gradient-to-br from-orange-400 to-orange-600 rounded-t-lg p-6 text-center">
                 <div className="text-6xl mb-2">🥉</div>
-                {teams[2]?.logo && (
-                  <img
-                    src={teams[2].logo}
-                    alt={teams[2].name}
-                    className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-3"
-                  />
+                {teams[2]?.logo ? (
+                  typeof teams[2].logo === 'string' && teams[2].logo.startsWith('http') ? (
+                    <img
+                      src={teams[2].logo}
+                      alt={teams[2].name}
+                      className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-3 object-cover"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-3 flex items-center justify-center text-4xl bg-white/20">
+                      {teams[2].logo}
+                    </div>
+                  )
+                ) : (
+                  <div className="w-20 h-20 mx-auto rounded-full border-4 border-white mb-3 flex items-center justify-center text-4xl bg-white/20">
+                    🏆
+                  </div>
                 )}
                 <h3 className="text-xl font-bold text-white mb-2">
                   {teams[2]?.name}
@@ -128,12 +168,22 @@ const PublicLeaderboard = () => {
                     <span className="text-3xl font-bold text-gray-400 w-12">
                       #{index + 1}
                     </span>
-                    {team.logo && (
-                      <img
-                        src={team.logo}
-                        alt={team.name}
-                        className="w-12 h-12 rounded-full"
-                      />
+                    {team.logo ? (
+                      typeof team.logo === 'string' && team.logo.startsWith('http') ? (
+                        <img
+                          src={team.logo}
+                          alt={team.name}
+                          className="w-12 h-12 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-gray-100">
+                          {team.logo}
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-2xl bg-gray-100">
+                        🏆
+                      </div>
                     )}
                     <div>
                       <h3 className="font-bold text-xl text-gray-900">

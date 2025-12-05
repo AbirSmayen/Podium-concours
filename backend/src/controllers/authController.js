@@ -24,19 +24,48 @@ const register = async (req, res, next) => {
       status: role === 'leader' ? 'pending' : 'active'
     };
 
-    // Ajouter le message si demande de leader
-    if (role === 'leader' && leaderRequestMessage) {
-      userData.leaderRequestMessage = leaderRequestMessage;
+    // Ajouter le message si demande de leader (toujours sauvegarder, même si vide)
+    if (role === 'leader') {
+      userData.leaderRequestMessage = leaderRequestMessage || '';
+      console.log('📝 Création d\'une demande de leader:', {
+        name,
+        email,
+        hasMessage: !!leaderRequestMessage,
+        messageLength: leaderRequestMessage?.length || 0,
+        message: leaderRequestMessage?.substring(0, 50) + '...' || '(vide)'
+      });
     }
 
     const user = await User.create(userData);
+    
+    // Log pour vérifier la création
+    if (role === 'leader') {
+      console.log('✅ Demande de leader créée avec succès:', {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        status: user.status,
+        role: user.role,
+        hasMessage: !!user.leaderRequestMessage,
+        messageLength: user.leaderRequestMessage?.length || 0
+      });
+      
+      // Vérifier que l'utilisateur est bien dans la base
+      const verifyUser = await User.findById(user._id);
+      console.log('✅ Vérification en base:', {
+        exists: !!verifyUser,
+        status: verifyUser?.status,
+        role: verifyUser?.role
+      });
+    }
 
     // Générer le token
     const token = generateToken(user._id, user.role);
 
     createdResponse(res, {
       user: {
-        id: user._id,
+        _id: user._id,
+        id: user._id, // Pour compatibilité
         name: user.name,
         email: user.email,
         role: user.role,
@@ -58,31 +87,48 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
+    // Validation des champs
+    if (!email || !password) {
+      return badRequestResponse(res, 'Email et mot de passe sont requis');
+    }
+
+    console.log(`🔐 Tentative de connexion pour: ${email}`);
+
     // Trouver l'utilisateur avec le mot de passe
     const user = await User.findOne({ email }).select('+password');
     
     if (!user) {
+      console.log(`❌ Utilisateur non trouvé: ${email}`);
       return badRequestResponse(res, 'Email ou mot de passe incorrect');
     }
+
+    console.log(`✅ Utilisateur trouvé: ${user.name} (${user.role}, status: ${user.status})`);
 
     // Vérifier le mot de passe
     const isPasswordValid = await user.comparePassword(password);
     
     if (!isPasswordValid) {
+      console.log(`❌ Mot de passe incorrect pour: ${email}`);
       return badRequestResponse(res, 'Email ou mot de passe incorrect');
     }
 
+    console.log(`✅ Mot de passe valide pour: ${email}`);
+
     // Vérifier le statut
-    if (user.status === 'blocked') {
-      return errorResponse(res, 'Votre compte a été bloqué. Contactez un administrateur.', 403);
+    if (user.status !== 'active') {
+      console.log(`⚠️ Compte non actif pour: ${email} (status: ${user.status})`);
+      return errorResponse(res, `Votre compte n'est pas encore activé ou a été bloqué. Statut actuel: ${user.status}`, 403);
     }
 
     // Générer le token
     const token = generateToken(user._id, user.role);
 
+    console.log(`✅ Connexion réussie pour: ${email} (${user.role})`);
+
     successResponse(res, {
       user: {
-        id: user._id,
+        _id: user._id,
+        id: user._id, // Pour compatibilité
         name: user.name,
         email: user.email,
         role: user.role,
@@ -93,6 +139,7 @@ const login = async (req, res, next) => {
     }, 'Connexion réussie');
 
   } catch (error) {
+    console.error('❌ Erreur lors de la connexion:', error);
     next(error);
   }
 };

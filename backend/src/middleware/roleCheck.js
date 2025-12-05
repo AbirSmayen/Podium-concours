@@ -20,7 +20,26 @@ const checkRole = (...allowedRoles) => {
 };
 
 // Middleware pour vérifier si l'utilisateur est admin
-const isAdmin = checkRole('admin');
+const isAdmin = (req, res, next) => {
+  if (!req.user) {
+    console.warn('⚠️ isAdmin: Utilisateur non authentifié');
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Utilisateur non authentifié.' 
+    });
+  }
+
+  if (req.user.role !== 'admin') {
+    console.warn(`⚠️ Accès refusé: ${req.user.email} (${req.user.role}) tentant d'accéder à une route admin`);
+    return res.status(403).json({ 
+      success: false, 
+      message: `Accès refusé. Rôle requis: admin.` 
+    });
+  }
+
+  console.log(`✅ Accès admin autorisé: ${req.user.email}`);
+  next();
+};
 
 // Middleware pour vérifier si l'utilisateur est leader ou admin
 const isLeaderOrAdmin = checkRole('leader', 'admin');

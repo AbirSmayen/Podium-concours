@@ -6,6 +6,7 @@ const validate = (req, res, next) => {
   if (!errors.isEmpty()) {
     return res.status(400).json({ 
       success: false, 
+      message: errors.array().map(err => err.msg).join(', '),
       errors: errors.array().map(err => err.msg)
     });
   }
@@ -29,6 +30,24 @@ const registerValidation = [
   validate
 ];
 
+// Validation pour demande d'adhésion
+const requestValidation = [
+  body('name').trim().notEmpty().withMessage('Le nom est obligatoire'),
+  body('email').trim().notEmpty().isEmail().withMessage('Email invalide'),
+  body('password').notEmpty().isLength({ min: 6 }).withMessage('Mot de passe trop court'),
+  body('teamId').notEmpty().isMongoId().withMessage('ID d\'équipe invalide'),
+  body('message').optional().isLength({ max: 500 }).withMessage('Message trop long'),
+  validate
+];
+
+// Validation pour les motivations
+const motivationValidation = [
+  body('message')
+    .notEmpty().withMessage('Le message est obligatoire')
+    .isLength({ max: 1000 }).withMessage('Message trop long'),
+  validate
+];
+
 const loginValidation = [
   body('email')
     .trim()
@@ -47,7 +66,7 @@ const teamValidation = [
     .notEmpty().withMessage("Le nom de l'équipe est obligatoire")
     .isLength({ max: 100 }).withMessage("Le nom ne peut pas dépasser 100 caractères"),
   body('leaderId')
-    .notEmpty().withMessage('Le leader est obligatoire')
+    .optional()
     .isMongoId().withMessage('ID de leader invalide'),
   validate
 ];
@@ -74,14 +93,12 @@ const challengeValidation = [
 
 // Validateurs pour les scores
 const scoreValidation = [
-  body('teamId')
-    .notEmpty().withMessage("L'équipe est obligatoire")
-    .isMongoId().withMessage("ID d'équipe invalide"),
   body('challengeId')
     .notEmpty().withMessage('Le défi est obligatoire')
     .isMongoId().withMessage('ID de défi invalide'),
-  body('pointsEarned')
-    .isInt({ min: 0 }).withMessage('Les points doivent être un nombre positif'),
+  body('submissionNote')
+    .optional()
+    .isLength({ max: 500 }).withMessage('La note ne peut pas dépasser 500 caractères'),
   validate
 ];
 
@@ -98,5 +115,7 @@ module.exports = {
   teamValidation,
   challengeValidation,
   scoreValidation,
-  idValidation
+  idValidation,
+  requestValidation,
+  motivationValidation
 };

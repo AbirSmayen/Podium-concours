@@ -4,22 +4,41 @@ import { jwtDecode } from 'jwt-decode'; // Correction ici : import nommé
 export const authService = {
   // Connexion
   login: async (email, password) => {
-    const response = await api.post('/users/login', { email, password });
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    return { token, user };
+    const response = await api.post('/auth/login', { email, password });
+    if (response.data.success) {
+      const data = response.data.data || response.data;
+      const { token, user } = data;
+      if (token && user) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        return { token, user };
+      }
+    }
+    throw new Error(response.data.message || 'Erreur de connexion');
   },
 
   // Inscription membre
   register: async (userData) => {
-    const response = await api.post('/users/register', userData);
-    return response.data;
+    const response = await api.post('/auth/register', userData);
+    if (response.data.success) {
+      const data = response.data.data || response.data;
+      const { token, user } = data;
+      if (token && user) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+        return { token, user };
+      }
+    }
+    throw new Error(response.data.message || 'Erreur d\'inscription');
   },
 
   // Demande de devenir leader
   requestLeader: async (formData) => {
-    const response = await api.post('/users/leader-request', formData);
+    // L'inscription avec role='leader' crée automatiquement une demande
+    const response = await api.post('/auth/register', {
+      ...formData,
+      role: 'leader'
+    });
     return response.data;
   },
 

@@ -22,9 +22,16 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const { user: loggedUser } = await authService.login(email, password);
-    setUser(loggedUser);
-    return loggedUser;
+    try {
+      const { user: loggedUser, token } = await authService.login(email, password);
+      if (loggedUser) {
+        setUser(loggedUser);
+        return { user: loggedUser, token };
+      }
+      throw new Error('Erreur de connexion');
+    } catch (error) {
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -37,7 +44,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
-    isAuthenticated: authService.isAuthenticated(),
+    isAuthenticated: !!user && authService.isAuthenticated(),
     isLeader: user?.role === 'leader',
     isMember: user?.role === 'member',
   };

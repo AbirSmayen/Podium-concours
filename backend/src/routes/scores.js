@@ -22,10 +22,10 @@ routerScores.get('/team/:teamId', getTeamScores);
 routerScores.post('/', authenticate, isActive, scoreValidation, submitScore);
 routerScores.get('/:id', authenticate, idValidation, getScoreById);
 
-// Routes protégées - Admin
-routerScores.get('/', authenticate, isAdmin, getAllScores);
+// Routes protégées - Admin (doivent être avant /:id pour éviter les conflits)
 routerScores.get('/pending', authenticate, isAdmin, getPendingScores);
 routerScores.get('/stats', authenticate, isAdmin, getScoreStats);
+routerScores.get('/', authenticate, isAdmin, getAllScores); // Route pour obtenir tous les scores (admin)
 routerScores.put('/:id/validate', authenticate, isAdmin, idValidation, validateScore);
 routerScores.put('/:id/reject', authenticate, isAdmin, idValidation, rejectScore);
 routerScores.delete('/:id', authenticate, isAdmin, idValidation, deleteScore);

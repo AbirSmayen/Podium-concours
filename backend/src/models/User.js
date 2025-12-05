@@ -50,19 +50,31 @@ const userSchema = new mongoose.Schema({
 });
 
 // Hash password avant sauvegarde
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function() {
+  // Ne hasher que si le mot de passe a été modifié
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
   
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    throw error;
+  }
 });
 
 // Méthode pour comparer les mots de passe
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  if (!candidatePassword || !this.password) {
+    return false;
+  }
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    console.error('Erreur lors de la comparaison du mot de passe:', error);
+    return false;
+  }
 };
 
 // Méthode pour retourner l'objet sans password

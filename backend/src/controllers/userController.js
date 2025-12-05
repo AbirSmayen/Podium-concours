@@ -61,14 +61,44 @@ const getUsersModule = () => {
       const requests = await User.find({ 
         role: 'leader', 
         status: 'pending' 
-      }).sort({ createdAt: -1 });
+      })
+      .select('-password') // Exclure le mot de passe
+      .sort({ createdAt: -1 });
 
-      successResponse(res, { 
-        requests,
-        total: requests.length 
-      }, 'Demandes de leader récupérées');
+      console.log(`📋 Récupération des demandes de leader: ${requests.length} demande(s) trouvée(s)`);
+      if (requests.length > 0) {
+        console.log('📋 Demandes trouvées:', requests.map(r => ({ 
+          id: r._id, 
+          name: r.name, 
+          email: r.email,
+          createdAt: r.createdAt 
+        })));
+      }
+
+      // S'assurer que la réponse est dans le bon format
+      const response = {
+        success: true,
+        message: 'Demandes de leader récupérées',
+        data: {
+          requests: requests.map(req => ({
+            _id: req._id,
+            id: req._id,
+            name: req.name,
+            email: req.email,
+            role: req.role,
+            status: req.status,
+            leaderRequestMessage: req.leaderRequestMessage || '',
+            createdAt: req.createdAt,
+            updatedAt: req.updatedAt
+          })),
+          total: requests.length
+        }
+      };
+
+      res.status(200).json(response);
 
     } catch (error) {
+      console.error('❌ Erreur lors de la récupération des demandes de leader:', error);
       next(error);
     }
   };

@@ -55,6 +55,16 @@ const submitScore = async (req, res, next) => {
       .populate('challengeId', 'title type points')
       .populate('submittedBy', 'name email');
 
+    // Émettre un événement Socket.IO pour notifier l'admin
+    const io = req.app.get('io');
+    if (io) {
+      io.to('leaderboard').emit('score-submitted', {
+        scoreId: score._id.toString(),
+        teamId: req.user.teamId.toString(),
+        challengeId: challengeId
+      });
+    }
+
     createdResponse(res, { score: populatedScore }, 'Score soumis avec succès. En attente de validation.');
 
   } catch (error) {
@@ -197,10 +207,12 @@ const validateScore = async (req, res, next) => {
     }
 
     // Valider le score (met à jour automatiquement le score de l'équipe)
-    await score.validate(req.user._id, validationNote);
+    await score.validateScore(req.user._id, validationNote);
 
-    // Vérifier si l'équipe obtient un badge
+    // Récupérer l'équipe mise à jour
     const team = await Team.findById(score.teamId);
+    
+    // Vérifier si l'équipe obtient un badge
     const teamScores = await Score.countDocuments({ 
       teamId: score.teamId, 
       status: 'validated' 
@@ -217,6 +229,19 @@ const validateScore = async (req, res, next) => {
       .populate('challengeId', 'title type points')
       .populate('submittedBy', 'name')
       .populate('validatedBy', 'name');
+
+    // Émettre un événement Socket.IO pour mettre à jour le classement
+    const io = req.app.get('io');
+    if (io) {
+      io.to('leaderboard').emit('leaderboard-updated', {
+        teamId: score.teamId.toString(),
+        newScore: team.score
+      });
+      io.to(`team:${score.teamId.toString()}`).emit('score-updated', {
+        scoreId: score._id.toString(),
+        status: 'validated'
+      });
+    }
 
     successResponse(res, { score: populatedScore }, 'Score validé avec succès');
 
@@ -253,6 +278,15 @@ const rejectScore = async (req, res, next) => {
       .populate('challengeId', 'title type')
       .populate('submittedBy', 'name')
       .populate('validatedBy', 'name');
+
+    // Émettre un événement Socket.IO
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`team:${score.teamId.toString()}`).emit('score-updated', {
+        scoreId: score._id.toString(),
+        status: 'rejected'
+      });
+    }
 
     successResponse(res, { score: populatedScore }, 'Score rejeté');
 

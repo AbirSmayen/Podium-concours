@@ -6,26 +6,28 @@ const Header = () => {
   const { user, logout } = useAuth();
 
   return (
-    <header className="bg-white shadow-lg border-b-4 border-indigo-600">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <Shield className="w-10 h-10 text-indigo-600" />
+    <header className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 shadow-2xl border-b border-purple-500/20 sticky top-0 z-50 backdrop-blur-xl">
+      <div className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
+        <div className="flex items-center gap-4">
+          <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+            <Shield className="w-7 h-7 text-white" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-            <p className="text-sm text-gray-600">Gestion complète de la plateforme</p>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Admin Dashboard</h1>
+            <p className="text-sm text-purple-200">Gestion complète de la plateforme</p>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
           {user && (
-            <div className="text-right">
-              <p className="font-medium text-gray-800">{user.name}</p>
-              <p className="text-xs text-gray-600">{user.email}</p>
+            <div className="text-right bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-4 py-2">
+              <p className="font-semibold text-white text-sm">{user.name}</p>
+              <p className="text-xs text-purple-200">{user.email}</p>
             </div>
           )}
           <button
             onClick={logout}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+            className="flex items-center gap-2 px-5 py-2.5 bg-red-500/90 hover:bg-red-600 text-white rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-red-500/50"
           >
             <LogOut className="w-4 h-4" />
             Déconnexion
